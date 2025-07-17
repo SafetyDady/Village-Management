@@ -1,121 +1,94 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-import logging
-from contextlib import asynccontextmanager
+import os
+from flask import Flask, jsonify, request
+from flask_cors import CORS
 
-from .config import settings
-from .database import test_connection, create_tables
-from .api import users
+app = Flask(__name__)
+CORS(app, origins="*")
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Configuration
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'asdf#FGSgvasgf$5$WGT')
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """
-    Application lifespan events
-    """
-    # Startup
-    logger.info("Starting Smart Village Management API...")
+# Simple health check endpoint
+@app.route('/health')
+def health_check():
+    return jsonify({
+        'status': 'healthy',
+        'message': 'Village Management API is running',
+        'version': '1.0.0'
+    }), 200
+
+# Simple users endpoint (mock data for now)
+@app.route('/api/users', methods=['GET'])
+def get_users():
+    mock_users = [
+        {
+            'id': 1,
+            'username': 'superadmin',
+            'email': 'admin@village.com',
+            'full_name': 'Super Administrator',
+            'role': 'SUPER_ADMIN',
+            'status': 'ACTIVE',
+            'created_at': '2024-01-01T00:00:00Z'
+        },
+        {
+            'id': 2,
+            'username': 'resident1',
+            'email': 'resident1@village.com',
+            'full_name': 'John Doe',
+            'role': 'RESIDENT',
+            'status': 'ACTIVE',
+            'created_at': '2024-01-02T00:00:00Z'
+        }
+    ]
     
-    # Test database connection
-    if not test_connection():
-        logger.error("Database connection failed!")
-        raise HTTPException(status_code=500, detail="Database connection failed")
-    
-    # Create tables
-    if not create_tables():
-        logger.error("Failed to create database tables!")
-        raise HTTPException(status_code=500, detail="Failed to create database tables")
-    
-    logger.info("Database connection and tables created successfully")
-    logger.info("Smart Village Management API started successfully")
-    
-    yield
-    
-    # Shutdown
-    logger.info("Shutting down Smart Village Management API...")
+    return jsonify({
+        'success': True,
+        'data': mock_users,
+        'count': len(mock_users)
+    }), 200
 
-# Create FastAPI application
-app = FastAPI(
-    title=settings.app_name,
-    version=settings.app_version,
-    description="Smart Village Management System API",
-    docs_url="/docs",
-    redoc_url="/redoc",
-    lifespan=lifespan
-)
-
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.allowed_origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
-)
-
-# Include routers
-app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
-
-@app.get("/")
-async def root():
-    """
-    Root endpoint
-    """
-    return {
-        "message": "Smart Village Management API",
-        "version": settings.app_version,
-        "status": "running"
+@app.route('/api/users', methods=['POST'])
+def create_user():
+    data = request.json
+    
+    # Simple validation
+    if not data or 'username' not in data or 'email' not in data:
+        return jsonify({
+            'success': False,
+            'error': 'Missing required fields: username, email'
+        }), 400
+    
+    # Mock response
+    new_user = {
+        'id': 3,
+        'username': data['username'],
+        'email': data['email'],
+        'full_name': data.get('full_name', ''),
+        'role': data.get('role', 'RESIDENT'),
+        'status': 'PENDING',
+        'created_at': '2024-07-17T00:00:00Z'
     }
+    
+    return jsonify({
+        'success': True,
+        'data': new_user,
+        'message': 'User created successfully (mock)'
+    }), 201
 
-@app.get("/health")
-async def health_check():
-    """
-    Health check endpoint
-    """
-    try:
-        db_status = test_connection()
-        return {
-            "status": "healthy" if db_status else "unhealthy",
-            "database": "connected" if db_status else "disconnected",
-            "version": settings.app_version
+# Root endpoint
+@app.route('/')
+def root():
+    return jsonify({
+        'message': 'Village Management API',
+        'version': '1.0.0',
+        'status': 'running',
+        'endpoints': {
+            'health': '/health',
+            'users': '/api/users'
         }
-    except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        return JSONResponse(
-            status_code=503,
-            content={
-                "status": "unhealthy",
-                "database": "error",
-                "error": str(e),
-                "version": settings.app_version
-            }
-        )
+    })
 
-@app.exception_handler(Exception)
-async def global_exception_handler(request, exc):
-    """
-    Global exception handler
-    """
-    logger.error(f"Global exception: {exc}")
-    return JSONResponse(
-        status_code=500,
-        content={
-            "error": "Internal server error",
-            "message": str(exc) if settings.debug else "An error occurred"
-        }
-    )
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=settings.debug,
-        log_level="info"
-    )
+if __name__ == '__main__':
+    port = int(os.getenv('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
 
