@@ -1,8 +1,11 @@
+import sys
 import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from database import init_database, test_connection
-from models import User
+import database
+import models
 
 app = Flask(__name__)
 CORS(app, origins="*")
@@ -10,180 +13,45 @@ CORS(app, origins="*")
 # Configuration
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'asdf#FGSgvasgf$5$WGT')
 
-# Initialize database on startup
 try:
-    if test_connection():
-        init_database()
+    database.init_database()
+    if database.test_connection():
         print("✅ Database connection successful!")
     else:
         print("❌ Database connection failed!")
 except Exception as e:
     print(f"❌ Database initialization error: {e}")
 
-# Root endpoint
-@app.route('/')
-def root():
-    return jsonify({
-        'message': 'Village Management API',
-        'status': 'running',
-        'version': '1.0.0',
-        'endpoints': {
-            'health': '/health',
-            'users': '/api/users'
-        }
-    }), 200
-
-# Health check endpoint
-@app.route('/health')
+@app.route('/health', methods=['GET'])
 def health_check():
-    return jsonify({
-        'status': 'healthy',
-        'message': 'Village Management API is running',
-        'version': '1.0.0'
-    }), 200
+    return jsonify({"status": "healthy", "message": "Village Management API is running"})
 
-# Get all users
 @app.route('/api/users', methods=['GET'])
 def get_users():
     try:
-        search_term = request.args.get('search', '')
-        
-        if search_term:
-            users = User.search(search_term)
-        else:
-            users = User.get_all()
-        
+        users = models.User.get_all()
         return jsonify({
-            'success': True,
-            'data': users,
-            'count': len(users)
-        }), 200
+            "success": True,
+            "count": len(users),
+            "data": users
+        })
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
-# Get user by ID
-@app.route('/api/users/<int:user_id>', methods=['GET'])
-def get_user(user_id):
-    try:
-        user = User.get_by_id(user_id)
-        if user:
-            return jsonify({
-                'success': True,
-                'data': user
-            }), 200
-        else:
-            return jsonify({
-                'success': False,
-                'error': 'User not found'
-            }), 404
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
-# Create new user
 @app.route('/api/users', methods=['POST'])
 def create_user():
     try:
         data = request.get_json()
-        
-        # Validate required fields
-        required_fields = ['username', 'email', 'full_name']
-        for field in required_fields:
-            if not data.get(field):
-                return jsonify({
-                    'success': False,
-                    'error': f'Missing required field: {field}'
-                }), 400
-        
-        # Set defaults
-        user_data = {
-            'username': data['username'],
-            'email': data['email'],
-            'full_name': data['full_name'],
-            'phone': data.get('phone'),
-            'role': data.get('role', 'RESIDENT'),
-            'status': data.get('status', 'ACTIVE'),
-            'address': data.get('address'),
-            'house_number': data.get('house_number'),
-            'id_card_number': data.get('id_card_number')
-        }
-        
-        user = User.create(user_data)
-        
-        if user:
-            return jsonify({
-                'success': True,
-                'data': user,
-                'message': 'User created successfully'
-            }), 201
-        else:
-            return jsonify({
-                'success': False,
-                'error': 'Failed to create user'
-            }), 500
-            
+        user_id = models.User.create(
+            username=data['username'],
+            email=data['email'],
+            full_name=data.get('full_name', ''),
+            role=data.get('role', 'RESIDENT'),
+            password=data.get('password', 'password123')
+        )
+        return jsonify({"success": True, "user_id": user_id}), 201
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
-# Update user
-@app.route('/api/users/<int:user_id>', methods=['PUT'])
-def update_user(user_id):
-    try:
-        data = request.get_json()
-        
-        # Remove id from data if present
-        data.pop('id', None)
-        
-        user = User.update(user_id, data)
-        
-        if user:
-            return jsonify({
-                'success': True,
-                'data': user,
-                'message': 'User updated successfully'
-            }), 200
-        else:
-            return jsonify({
-                'success': False,
-                'error': 'User not found or no changes made'
-            }), 404
-            
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
-# Delete user
-@app.route('/api/users/<int:user_id>', methods=['DELETE'])
-def delete_user(user_id):
-    try:
-        success = User.delete(user_id)
-        
-        if success:
-            return jsonify({
-                'success': True,
-                'message': 'User deleted successfully'
-            }), 200
-        else:
-            return jsonify({
-                'success': False,
-                'error': 'User not found'
-            }), 404
-            
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 8000))
