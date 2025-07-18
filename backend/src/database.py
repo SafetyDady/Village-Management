@@ -34,27 +34,32 @@ def init_database():
                 email VARCHAR(100) UNIQUE NOT NULL,
                 full_name VARCHAR(100) NOT NULL,
                 phone VARCHAR(20),
+                hashed_password VARCHAR(255) NOT NULL,
+                is_active BOOLEAN DEFAULT TRUE,
+                is_verified BOOLEAN DEFAULT FALSE,
                 role VARCHAR(20) DEFAULT 'RESIDENT',
                 status VARCHAR(20) DEFAULT 'ACTIVE',
                 address TEXT,
                 house_number VARCHAR(20),
                 id_card_number VARCHAR(20),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                last_login TIMESTAMP WITH TIME ZONE,
+                notes TEXT
             )
         """)
         
         # Insert default admin user if not exists
         cursor.execute("""
-            INSERT INTO users (username, email, full_name, role, status)
-            VALUES ('superadmin', 'admin@village.com', 'Super Administrator', 'SUPER_ADMIN', 'ACTIVE')
+            INSERT INTO users (username, email, full_name, hashed_password, role, status, is_active, is_verified)
+            VALUES ('superadmin', 'admin@village.com', 'Super Administrator', '$2b$12$dummy.hash.for.Admin123!', 'SUPER_ADMIN', 'ACTIVE', TRUE, TRUE)
             ON CONFLICT (username) DO NOTHING
         """)
         
         # Insert sample resident if not exists
         cursor.execute("""
-            INSERT INTO users (username, email, full_name, role, status)
-            VALUES ('resident1', 'resident1@village.com', 'John Doe', 'RESIDENT', 'ACTIVE')
+            INSERT INTO users (username, email, full_name, hashed_password, role, status, is_active, is_verified)
+            VALUES ('resident1', 'resident1@village.com', 'John Doe', '$2b$12$dummy.hash.for.password123', 'RESIDENT', 'ACTIVE', TRUE, TRUE)
             ON CONFLICT (username) DO NOTHING
         """)
         

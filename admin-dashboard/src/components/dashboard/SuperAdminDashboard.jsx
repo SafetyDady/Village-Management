@@ -35,10 +35,11 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu.jsx'
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarProvider } from '@/components/ui/sidebar.jsx'
+import UserManagement from './UserManagement.jsx'
 import '../../styles/App.css'
 
 const sidebarItems = [
-  { icon: Home, label: 'Dashboard', active: true },
+  { icon: Home, label: 'Dashboard' },
   { icon: Users, label: 'User Management' },
   { icon: DollarSign, label: 'Financial Management' },
   { icon: BarChart3, label: 'Reports & Analytics' },
@@ -397,50 +398,22 @@ function SuperAdminDashboard({ user, onLogout }) {
                       </CardContent>
                     </Card>
                   </div>
-
-                  {/* Quick Actions */}
-                  <Card className="dark:bg-gray-800 dark:border-gray-700">
-                    <CardHeader>
-                      <CardTitle className="dark:text-white">Quick Actions</CardTitle>
-                      <CardDescription className="dark:text-gray-400">
-                        Frequently used administrative functions
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        <Button className="h-20 flex flex-col space-y-2 dark:bg-gray-700 dark:hover:bg-gray-600" variant="outline">
-                          <UserCheck className="w-6 h-6" />
-                          <span className="text-sm">Add User</span>
-                        </Button>
-                        <Button className="h-20 flex flex-col space-y-2 dark:bg-gray-700 dark:hover:bg-gray-600" variant="outline">
-                          <FileText className="w-6 h-6" />
-                          <span className="text-sm">Generate Report</span>
-                        </Button>
-                        <Button className="h-20 flex flex-col space-y-2 dark:bg-gray-700 dark:hover:bg-gray-600" variant="outline">
-                          <Shield className="w-6 h-6" />
-                          <span className="text-sm">Security Audit</span>
-                        </Button>
-                        <Button className="h-20 flex flex-col space-y-2 dark:bg-gray-700 dark:hover:bg-gray-600" variant="outline">
-                          <Settings className="w-6 h-6" />
-                          <span className="text-sm">System Config</span>
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
                 </div>
               )}
 
-              {/* Other Pages Placeholder */}
-              {activeItem !== 'Dashboard' && (
-                <div className="flex items-center justify-center h-96">
+              {activeItem === 'User Management' && (
+                <UserManagement />
+              )}
+
+              {activeItem !== 'Dashboard' && activeItem !== 'User Management' && (
+                <div className="flex items-center justify-center h-64">
                   <div className="text-center">
-                    <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <AlertTriangle className="w-12 h-12 text-gray-400 dark:text-gray-500" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{activeItem}</h3>
-                    <p className="text-gray-600 dark:text-gray-400">This page is under development</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
-                      The {activeItem.toLowerCase()} functionality will be implemented in the next phase
+                    <div className="text-6xl mb-4">🚧</div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                      {activeItem}
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      This section is under development
                     </p>
                   </div>
                 </div>

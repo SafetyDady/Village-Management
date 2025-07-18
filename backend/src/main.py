@@ -1,8 +1,8 @@
 import os
-from flask import Flask, jsonify, request
+from flask import Flask, request, jsonify
 from flask_cors import CORS
-from .database import init_database, test_connection
-from .models import User
+from database import init_database, test_connection
+from models import User
 
 app = Flask(__name__)
 CORS(app, origins="*")

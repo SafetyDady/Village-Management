@@ -1,4 +1,4 @@
-from .database import get_db_connection
+from database import get_db_connection
 from psycopg2.extras import RealDictCursor
 from datetime import datetime
 
@@ -59,15 +59,33 @@ class User:
         with get_db_connection() as conn:
             cursor = conn.cursor(cursor_factory=RealDictCursor)
             
+            # Set default values for optional fields
+            defaults = {
+                'phone': None,
+                'role': 'RESIDENT',
+                'status': 'ACTIVE',
+                'address': None,
+                'house_number': None,
+                'id_card_number': None,
+                'is_active': True,
+                'is_verified': False,
+                'notes': None
+            }
+            
+            # Merge user_data with defaults
+            final_data = {**defaults, **user_data}
+            
             query = """
-                INSERT INTO users (username, email, full_name, phone, role, status, 
-                                 address, house_number, id_card_number)
-                VALUES (%(username)s, %(email)s, %(full_name)s, %(phone)s, %(role)s, 
-                       %(status)s, %(address)s, %(house_number)s, %(id_card_number)s)
+                INSERT INTO users (username, email, full_name, phone, hashed_password, 
+                                 is_active, is_verified, role, status, address, 
+                                 house_number, id_card_number, notes)
+                VALUES (%(username)s, %(email)s, %(full_name)s, %(phone)s, %(hashed_password)s,
+                       %(is_active)s, %(is_verified)s, %(role)s, %(status)s, %(address)s, 
+                       %(house_number)s, %(id_card_number)s, %(notes)s)
                 RETURNING *
             """
             
-            cursor.execute(query, user_data)
+            cursor.execute(query, final_data)
             conn.commit()
             row = cursor.fetchone()
             return dict(row) if row else None
