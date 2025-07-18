@@ -1,79 +1,76 @@
-from sqlalchemy import create_engine, MetaData
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.pool import StaticPool
-import logging
-from .config import settings
+import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from contextlib import contextmanager
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Database configuration
+DATABASE_URL = os.getenv('DATABASE_URL')
 
-# Database URL
-DATABASE_URL = settings.database_url_sync
-
-# Create SQLAlchemy engine
-try:
-    engine = create_engine(
-        DATABASE_URL,
-        poolclass=StaticPool,
-        pool_pre_ping=True,
-        pool_recycle=300,
-        echo=settings.debug  # Log SQL queries in debug mode
-    )
-    logger.info(f"Database engine created successfully")
-except Exception as e:
-    logger.error(f"Failed to create database engine: {e}")
-    raise
-
-# Create SessionLocal class
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Create Base class for models
-Base = declarative_base()
-
-# Metadata for database operations
-metadata = MetaData()
-
-def get_db() -> Session:
-    """
-    Dependency function to get database session
-    """
-    db = SessionLocal()
+@contextmanager
+def get_db_connection():
+    """Context manager for database connections"""
+    conn = None
     try:
-        yield db
+        conn = psycopg2.connect(DATABASE_URL)
+        yield conn
     except Exception as e:
-        logger.error(f"Database session error: {e}")
-        db.rollback()
-        raise
+        if conn:
+            conn.rollback()
+        raise e
     finally:
-        db.close()
+        if conn:
+            conn.close()
+
+def init_database():
+    """Initialize database tables"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        
+        # Create users table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(50) UNIQUE NOT NULL,
+                email VARCHAR(100) UNIQUE NOT NULL,
+                full_name VARCHAR(100) NOT NULL,
+                phone VARCHAR(20),
+                role VARCHAR(20) DEFAULT 'RESIDENT',
+                status VARCHAR(20) DEFAULT 'ACTIVE',
+                address TEXT,
+                house_number VARCHAR(20),
+                id_card_number VARCHAR(20),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            )
+        """)
+        
+        # Insert default admin user if not exists
+        cursor.execute("""
+            INSERT INTO users (username, email, full_name, role, status)
+            VALUES ('superadmin', 'admin@village.com', 'Super Administrator', 'SUPER_ADMIN', 'ACTIVE')
+            ON CONFLICT (username) DO NOTHING
+        """)
+        
+        # Insert sample resident if not exists
+        cursor.execute("""
+            INSERT INTO users (username, email, full_name, role, status)
+            VALUES ('resident1', 'resident1@village.com', 'John Doe', 'RESIDENT', 'ACTIVE')
+            ON CONFLICT (username) DO NOTHING
+        """)
+        
+        conn.commit()
+        print("Database initialized successfully!")
 
 def test_connection():
-    """
-    Test database connection
-    """
+    """Test database connection"""
     try:
-        db = SessionLocal()
-        # Test connection with a simple query
-        from sqlalchemy import text
-        result = db.execute(text("SELECT 1"))
-        db.close()
-        logger.info("Database connection test successful")
-        return True
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT version();")
+            version = cursor.fetchone()[0]
+            print(f"Connected to PostgreSQL: {version}")
+            return True
     except Exception as e:
-        logger.error(f"Database connection test failed: {e}")
-        return False
-
-def create_tables():
-    """
-    Create all tables in the database
-    """
-    try:
-        Base.metadata.create_all(bind=engine)
-        logger.info("Database tables created successfully")
-        return True
-    except Exception as e:
-        logger.error(f"Failed to create database tables: {e}")
+        print(f"Database connection failed: {e}")
         return False
 
