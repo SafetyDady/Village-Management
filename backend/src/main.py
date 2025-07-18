@@ -53,11 +53,6 @@ def create_user():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
-if __name__ == '__main__':
-    port = int(os.getenv('PORT', 8000))
-    app.run(host='0.0.0.0', port=port, debug=False)
-
-
 # GET user by id
 @app.route('/api/users/<int:user_id>', methods=['GET'])
 def get_user_by_id(user_id):
@@ -91,4 +86,8 @@ def delete_user_by_id(user_id):
         return jsonify({"success": True, "message": "User deleted successfully"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+if __name__ == '__main__':
+    port = int(os.getenv('PORT', 8000))
+    app.run(host='0.0.0.0', port=port, debug=False)
 
