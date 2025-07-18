@@ -57,3 +57,38 @@ if __name__ == '__main__':
     port = int(os.getenv('PORT', 8000))
     app.run(host='0.0.0.0', port=port, debug=False)
 
+
+# GET user by id
+@app.route('/api/users/<int:user_id>', methods=['GET'])
+def get_user_by_id(user_id):
+    try:
+        user = models.User.get_by_id(user_id)
+        if not user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+        return jsonify({"success": True, "data": user})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+# PUT update user by id
+@app.route('/api/users/<int:user_id>', methods=['PUT'])
+def update_user_by_id(user_id):
+    try:
+        data = request.get_json()
+        user = models.User.update(user_id, data)
+        if not user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+        return jsonify({"success": True, "data": user})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+# DELETE user by id
+@app.route('/api/users/<int:user_id>', methods=['DELETE'])
+def delete_user_by_id(user_id):
+    try:
+        result = models.User.delete(user_id)
+        if not result:
+            return jsonify({"success": False, "error": "User not found"}), 404
+        return jsonify({"success": True, "message": "User deleted successfully"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
