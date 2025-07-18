@@ -42,14 +42,26 @@ def get_users():
 def create_user():
     try:
         data = request.get_json()
-        user_id = models.User.create(
-            username=data['username'],
-            email=data['email'],
-            full_name=data.get('full_name', ''),
-            role=data.get('role', 'RESIDENT'),
-            password=data.get('password', 'password123')
-        )
-        return jsonify({"success": True, "user_id": user_id}), 201
+        
+        # Hash password if provided
+        import bcrypt
+        password = data.get('password', 'password123')
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        
+        # Prepare user data
+        user_data = {
+            'username': data['username'],
+            'email': data['email'],
+            'full_name': data.get('full_name', ''),
+            'role': data.get('role', 'RESIDENT'),
+            'hashed_password': hashed_password
+        }
+        
+        user = models.User.create(user_data)
+        if not user:
+            return jsonify({"success": False, "error": "Failed to create user"}), 500
+            
+        return jsonify({"success": True, "user_id": user['id'], "data": user}), 201
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
