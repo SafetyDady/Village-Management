@@ -1,0 +1,14 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+[remote "origin"]
+	url = https://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@github.com/SafetyDady/Village-Management.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[user]
+	email = admin@village.com
+	name = Village Admin
+[branch "main"]
+	remote = origin
+	merge = refs/heads/main

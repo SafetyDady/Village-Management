@@ -1,0 +1,23 @@
+0000000000000000000000000000000000000000 9e20fff1a90a46ebfab21d1458b2a2de973db1c1 Village Admin <admin@village.com> 1752740618 -0400	commit (initial): feat: Implement Complete Project Structure
+9e20fff1a90a46ebfab21d1458b2a2de973db1c1 9e20fff1a90a46ebfab21d1458b2a2de973db1c1 Village Admin <admin@village.com> 1752740816 -0400	reset: moving to HEAD
+9e20fff1a90a46ebfab21d1458b2a2de973db1c1 9c90d42ef5542d06a46137394ee67ea77e7f9221 Village Admin <admin@village.com> 1752740834 -0400	commit: feat: Restructure to Complete Project Architecture
+9c90d42ef5542d06a46137394ee67ea77e7f9221 39c568b434c5237d1c74ae35e5f9302ab8388e5a Village Admin <admin@village.com> 1752741147 -0400	commit: feat: Add Vercel deployment configuration
+39c568b434c5237d1c74ae35e5f9302ab8388e5a 0e1405cf1ab773d5fca8a707d2ee90fdff179f51 Village Admin <admin@village.com> 1752743128 -0400	commit: feat: Add Backend API with PostgreSQL Database Connection
+0e1405cf1ab773d5fca8a707d2ee90fdff179f51 e371a9e22b91824fe7392a35cec36a8877a25464 Village Admin <admin@village.com> 1752743161 -0400	commit: fix: Remove sensitive data from app.yaml
+e371a9e22b91824fe7392a35cec36a8877a25464 39c568b434c5237d1c74ae35e5f9302ab8388e5a Village Admin <admin@village.com> 1752743179 -0400	reset: moving to HEAD~2
+39c568b434c5237d1c74ae35e5f9302ab8388e5a 39c568b434c5237d1c74ae35e5f9302ab8388e5a Village Admin <admin@village.com> 1752743189 -0400	reset: moving to HEAD
+39c568b434c5237d1c74ae35e5f9302ab8388e5a 03644646b763ecdc7a9451501022743e9d59f8b3 Village Admin <admin@village.com> 1752743199 -0400	commit: feat: Add Backend API with PostgreSQL Database Connection
+03644646b763ecdc7a9451501022743e9d59f8b3 b6f0a3215018c09418f803e70e45e05be0c38b08 Village Admin <admin@village.com> 1752749791 -0400	commit: Update backend to Flask API with working endpoints
+b6f0a3215018c09418f803e70e45e05be0c38b08 1b2455f0a63bc3fa2e2cc0bbb465fa8a1096d4f7 Village Admin <admin@village.com> 1752804045 -0400	commit: Add PostgreSQL database integration with full CRUD operations
+1b2455f0a63bc3fa2e2cc0bbb465fa8a1096d4f7 b6f0a3215018c09418f803e70e45e05be0c38b08 Village Admin <admin@village.com> 1752804110 -0400	reset: moving to HEAD~1
+b6f0a3215018c09418f803e70e45e05be0c38b08 41633fe4ece8ff8d48ddd8aba5bba33a6cd09dc8 Village Admin <admin@village.com> 1752804111 -0400	commit: Add PostgreSQL integration with environment variables
+41633fe4ece8ff8d48ddd8aba5bba33a6cd09dc8 38df8a7d0e9078a58243a077ebee38b4c1e5cd12 Village Admin <admin@village.com> 1752805327 -0400	commit: Fix: Change Flask default port to 8000 to match DigitalOcean configuration
+38df8a7d0e9078a58243a077ebee38b4c1e5cd12 1af5df49babe0e16395fed5680670b21b19aac6a Village Admin <admin@village.com> 1752807849 -0400	commit: Frontend: Update API URL and fix React imports
+1af5df49babe0e16395fed5680670b21b19aac6a bd47fa03d0d8f28c0183cc9b435d2c191d8a35f4 Village Admin <admin@village.com> 1752808075 -0400	commit: Fix: Production imports for DigitalOcean deployment
+bd47fa03d0d8f28c0183cc9b435d2c191d8a35f4 14fb2943e5d16feb7aa30dadc37896779e3f972e Village Admin <admin@village.com> 1752808917 -0400	commit: Add individual user API endpoints (GET/PUT/DELETE /api/users/{id})
+14fb2943e5d16feb7aa30dadc37896779e3f972e 7e4a7f39131e0bd52c30f322bdcb911f59f072cc Village Admin <admin@village.com> 1752809939 -0400	commit: Frontend: Add comprehensive error handling and validation
+7e4a7f39131e0bd52c30f322bdcb911f59f072cc 346842001f83c872f8f803c0ceff8853c98b6272 Village Admin <admin@village.com> 1752810237 -0400	commit: Backend: Fix individual user routes registration
+346842001f83c872f8f803c0ceff8853c98b6272 83432ec49ed6903e1a60df4a8653cb81b1d75aa9 Village Admin <admin@village.com> 1752810316 -0400	commit: Remove venv directory to fix secret scanning
+83432ec49ed6903e1a60df4a8653cb81b1d75aa9 2c4f7c2bb8935be6f8b6cf0ba0b86fdfe7d7811c Village Admin <admin@village.com> 1752822021 -0400	commit: Fix: Update create_user API to use dictionary format and add password hashing
+2c4f7c2bb8935be6f8b6cf0ba0b86fdfe7d7811c 14b543b2b266f2200a9a4c80fd1497f725759b45 Village Admin <admin@village.com> 1752822166 -0400	commit: Fix: Replace bcrypt with hashlib for password hashing
+14b543b2b266f2200a9a4c80fd1497f725759b45 cf5b9623968a9ce0a4ba33019380286a5660d6c8 Village Admin <admin@village.com> 1752832102 -0400	commit: 📚 Update README - Complete deployment status and documentation

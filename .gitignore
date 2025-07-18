@@ -7,3 +7,19 @@ dist/
 .DS_Store
 .vscode/
 .idea/
+
+# Environment variables
+.env
+*.env
+!.env.example
+
+# Sensitive files
+config.py
+secrets.json
+credentials.json
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+

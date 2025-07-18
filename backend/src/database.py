@@ -3,7 +3,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from contextlib import contextmanager
 
-# Database configuration
+# Database configuration from environment variables
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 @contextmanager
