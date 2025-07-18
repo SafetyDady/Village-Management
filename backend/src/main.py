@@ -1,11 +1,13 @@
 import sys
 import os
+import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import database
 import models
+import hashlib
 
 app = Flask(__name__)
 CORS(app, origins="*")
@@ -43,10 +45,9 @@ def create_user():
     try:
         data = request.get_json()
         
-        # Hash password if provided
-        import bcrypt
+        # Hash password if provided (using simple hash for now)
         password = data.get('password', 'password123')
-        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        hashed_password = hashlib.sha256(password.encode('utf-8')).hexdigest()
         
         # Prepare user data
         user_data = {
