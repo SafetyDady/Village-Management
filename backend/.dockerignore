@@ -1,3 +1,4 @@
+# Python
 __pycache__
 *.pyc
 *.pyo
@@ -19,14 +20,32 @@ coverage.xml
 .pytest_cache
 .hypothesis
 
+# IDE
 .DS_Store
 .vscode
 .idea
 
-# Local development
+# Environment files
+.env
 .env.local
 .env.development
+.env.test
+
+# Development files
 test_connection.py
 tests/
 *.md
+e2e_*.py
+*_test_results.json
+
+# Temporary files
+*_original.py
+*_backup.py
+*_temp.py
+*_mock.py
+
+# Documentation (exclude from production image)
+README.md
+CHANGELOG.md
+docs/
 

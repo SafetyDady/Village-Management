@@ -423,3 +423,209 @@
 - [Incident Response Procedures]
 - [Backup and Recovery Procedures]
 
+
+
+## 🔍 Post-Deployment Verification
+
+### **Application Health Checks**
+
+- [ ] **Backend API Health**
+  ```bash
+  curl -f https://your-api-domain.com/health
+  # Expected: 200 OK with health status
+  ```
+  - [ ] Health endpoint returns 200 status
+  - [ ] Database connection is confirmed
+  - [ ] JWT configuration is loaded
+  - [ ] All required environment variables are set
+
+- [ ] **Frontend Application**
+  ```bash
+  curl -f https://your-frontend-domain.com/health
+  # Expected: 200 OK
+  ```
+  - [ ] Frontend loads without errors
+  - [ ] Static assets are served correctly
+  - [ ] API connection is established
+  - [ ] Login page is accessible
+
+### **Authentication Flow Testing**
+
+- [ ] **User Registration**
+  ```bash
+  curl -X POST https://your-api-domain.com/auth/register \
+    -H "Content-Type: application/json" \
+    -d '{"email":"test@example.com","password":"TestPass123","full_name":"Test User"}'
+  # Expected: 201 Created with user data
+  ```
+  - [ ] New user registration works
+  - [ ] Password is hashed correctly
+  - [ ] User data is stored in database
+  - [ ] Appropriate role is assigned
+
+- [ ] **User Login**
+  ```bash
+  curl -X POST https://your-api-domain.com/auth/login \
+    -H "Content-Type: application/json" \
+    -d '{"email":"test@example.com","password":"TestPass123"}'
+  # Expected: 200 OK with access_token and refresh_token
+  ```
+  - [ ] Login with correct credentials works
+  - [ ] JWT tokens are generated
+  - [ ] Token expiry times are correct
+  - [ ] Login with incorrect credentials fails (401)
+
+- [ ] **Protected Endpoints**
+  ```bash
+  # Get access token from login response
+  TOKEN="your-access-token-here"
+  curl -H "Authorization: Bearer $TOKEN" https://your-api-domain.com/auth/me
+  # Expected: 200 OK with user profile
+  ```
+  - [ ] Protected endpoints require authentication
+  - [ ] Valid tokens grant access
+  - [ ] Invalid/expired tokens are rejected (401)
+  - [ ] User profile data is returned correctly
+
+### **RBAC (Role-Based Access Control) Testing**
+
+- [ ] **Super Admin Access**
+  - [ ] Can access all endpoints
+  - [ ] Can delete users
+  - [ ] Can manage all system functions
+
+- [ ] **Village Admin Access**
+  - [ ] Can create and edit users
+  - [ ] Can access user management
+  - [ ] Cannot delete users (403 expected)
+
+- [ ] **Accounting Admin Access**
+  - [ ] Can view user lists and stats
+  - [ ] Cannot create/edit users (403 expected)
+  - [ ] Has appropriate accounting permissions
+
+- [ ] **Regular User Access**
+  - [ ] Can view own profile
+  - [ ] Cannot access admin functions (403 expected)
+  - [ ] Can update own profile
+
+### **Business Logic Endpoints**
+
+- [ ] **User Management API**
+  ```bash
+  # Test with appropriate admin token
+  curl -H "Authorization: Bearer $ADMIN_TOKEN" https://your-api-domain.com/api/v1/users
+  # Expected: 200 OK with user list
+  ```
+  - [ ] GET /api/v1/users returns user list (admin only)
+  - [ ] POST /api/v1/users creates new user (village admin+)
+  - [ ] PUT /api/v1/users/{id} updates user (village admin+)
+  - [ ] DELETE /api/v1/users/{id} deletes user (super admin only)
+  - [ ] GET /api/v1/users/stats returns statistics (admin only)
+
+### **Application Logs Monitoring**
+
+- [ ] **Backend Logs**
+  - [ ] Application starts without errors
+  - [ ] Database connections are successful
+  - [ ] JWT initialization is confirmed
+  - [ ] No critical errors in startup logs
+  - [ ] Authentication events are logged
+
+- [ ] **Frontend Logs**
+  - [ ] Application builds successfully
+  - [ ] No JavaScript errors in browser console
+  - [ ] API calls are successful
+  - [ ] Authentication state is managed correctly
+
+### **Performance Verification**
+
+- [ ] **Response Times**
+  - [ ] Login endpoint responds within 2 seconds
+  - [ ] Protected endpoints respond within 1 second
+  - [ ] User list endpoint responds within 3 seconds
+  - [ ] Frontend loads within 5 seconds
+
+- [ ] **Concurrent Users**
+  - [ ] System handles 10 concurrent logins
+  - [ ] No performance degradation under normal load
+  - [ ] Memory usage is within acceptable limits
+
+## 🔐 Security Post-Deployment
+
+### **Ongoing Security Monitoring**
+
+- [ ] **Security Event Monitoring**
+  - [ ] Failed login attempts are logged
+  - [ ] Unusual access patterns are detected
+  - [ ] Token expiry events are monitored
+  - [ ] RBAC violations are logged and alerted
+
+- [ ] **Regular Security Tasks**
+  - [ ] **Weekly:** Review authentication logs for anomalies
+  - [ ] **Monthly:** Rotate JWT secret keys
+  - [ ] **Monthly:** Update dependencies for security patches
+  - [ ] **Quarterly:** Review and update user roles and permissions
+  - [ ] **Quarterly:** Security audit of authentication system
+
+### **Secret Rotation Schedule**
+
+- [ ] **JWT Secret Key Rotation**
+  - [ ] Generate new JWT secret key
+  - [ ] Update production environment variables
+  - [ ] Restart backend services
+  - [ ] Verify all users can still authenticate
+  - [ ] Schedule next rotation (recommended: monthly)
+
+- [ ] **Database Password Rotation**
+  - [ ] Generate new database password
+  - [ ] Update database user password
+  - [ ] Update production environment variables
+  - [ ] Restart services that connect to database
+  - [ ] Verify database connectivity
+
+### **Dependency Updates**
+
+- [ ] **Security Updates**
+  - [ ] Monitor security advisories for Flask, JWT, bcrypt
+  - [ ] Update dependencies with security patches
+  - [ ] Test authentication system after updates
+  - [ ] Deploy updates to production
+
+- [ ] **Regular Updates**
+  - [ ] Review and update Python dependencies monthly
+  - [ ] Review and update Node.js dependencies monthly
+  - [ ] Test all functionality after updates
+  - [ ] Maintain compatibility with existing data
+
+## 📊 Monitoring Dashboards
+
+### **Application Metrics**
+
+- [ ] **Authentication Metrics**
+  - [ ] Login success/failure rates
+  - [ ] Token generation and validation rates
+  - [ ] User registration trends
+  - [ ] RBAC access patterns
+
+- [ ] **System Metrics**
+  - [ ] API response times
+  - [ ] Database connection pool usage
+  - [ ] Memory and CPU utilization
+  - [ ] Error rates and types
+
+### **Alerting Configuration**
+
+- [ ] **Critical Alerts**
+  - [ ] Authentication system down
+  - [ ] Database connection failures
+  - [ ] High error rates (>5%)
+  - [ ] Security violations detected
+
+- [ ] **Warning Alerts**
+  - [ ] Slow response times (>3 seconds)
+  - [ ] High memory usage (>80%)
+  - [ ] Failed login spike (>10 failures/minute)
+  - [ ] Token expiry issues
+
+
