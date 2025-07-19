@@ -22,7 +22,8 @@ load_dotenv()
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
 # Import our authentication modules
-from src.auth import setup_jwt, AuthService
+from src.jwt_setup import setup_jwt
+from src.auth import AuthService
 from src.api.auth import auth_bp
 
 # Configure logging

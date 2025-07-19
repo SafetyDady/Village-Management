@@ -1,0 +1,140 @@
+[
+  {
+    "test": "Mock User Registration",
+    "status": "PASS",
+    "details": "Simulated user creation: mock_e2e_test_1752924583@example.com",
+    "timestamp": "2025-07-19T07:29:43.780461"
+  },
+  {
+    "test": "Mock User Login",
+    "status": "PASS",
+    "details": "Simulated login success with tokens",
+    "timestamp": "2025-07-19T07:29:43.780502"
+  },
+  {
+    "test": "Mock Protected Endpoint Access",
+    "status": "PASS",
+    "details": "Simulated profile retrieval: mock_e2e_test_1752924583@example.com",
+    "timestamp": "2025-07-19T07:29:43.780524"
+  },
+  {
+    "test": "Mock Token Refresh",
+    "status": "PASS",
+    "details": "Simulated token refresh success",
+    "timestamp": "2025-07-19T07:29:43.780534"
+  },
+  {
+    "test": "Mock RBAC (SUPER_ADMIN \u2192 ALL)",
+    "status": "PASS",
+    "details": "Expected: ALLOW, Got: ALLOW",
+    "timestamp": "2025-07-19T07:29:43.780545"
+  },
+  {
+    "test": "Mock RBAC (VILLAGE_ADMIN \u2192 VILLAGE)",
+    "status": "FAIL",
+    "details": "Expected: ALLOW, Got: DENY",
+    "timestamp": "2025-07-19T07:29:43.780555"
+  },
+  {
+    "test": "Mock RBAC (ACCOUNTING_ADMIN \u2192 ACCOUNTING)",
+    "status": "FAIL",
+    "details": "Expected: ALLOW, Got: DENY",
+    "timestamp": "2025-07-19T07:29:43.780572"
+  },
+  {
+    "test": "Mock RBAC (MAINTENANCE_STAFF \u2192 ADMIN)",
+    "status": "PASS",
+    "details": "Expected: ALLOW, Got: ALLOW",
+    "timestamp": "2025-07-19T07:29:43.780583"
+  },
+  {
+    "test": "Mock RBAC (AUDITOR \u2192 ADMIN)",
+    "status": "PASS",
+    "details": "Expected: DENY, Got: DENY",
+    "timestamp": "2025-07-19T07:29:43.780598"
+  },
+  {
+    "test": "Mock RBAC (RESIDENT \u2192 ADMIN)",
+    "status": "PASS",
+    "details": "Expected: DENY, Got: DENY",
+    "timestamp": "2025-07-19T07:29:43.780613"
+  },
+  {
+    "test": "Mock User Logout",
+    "status": "PASS",
+    "details": "Simulated logout success",
+    "timestamp": "2025-07-19T07:29:43.780623"
+  },
+  {
+    "test": "Mock Invalid Email Format",
+    "status": "PASS",
+    "details": "Simulated rejection of invalid email format",
+    "timestamp": "2025-07-19T07:29:43.780637"
+  },
+  {
+    "test": "Mock Weak Password",
+    "status": "PASS",
+    "details": "Simulated rejection of weak password",
+    "timestamp": "2025-07-19T07:29:43.780646"
+  },
+  {
+    "test": "Mock User Already Exists",
+    "status": "PASS",
+    "details": "Simulated rejection of duplicate user registration",
+    "timestamp": "2025-07-19T07:29:43.780653"
+  },
+  {
+    "test": "Mock Invalid Credentials",
+    "status": "PASS",
+    "details": "Simulated rejection of invalid login credentials",
+    "timestamp": "2025-07-19T07:29:43.780665"
+  },
+  {
+    "test": "Mock Expired Token",
+    "status": "PASS",
+    "details": "Simulated rejection of expired access token",
+    "timestamp": "2025-07-19T07:29:43.780677"
+  },
+  {
+    "test": "Mock Invalid Token",
+    "status": "PASS",
+    "details": "Simulated rejection of malformed token",
+    "timestamp": "2025-07-19T07:29:43.780685"
+  },
+  {
+    "test": "Mock Missing Token",
+    "status": "PASS",
+    "details": "Simulated rejection of request without token",
+    "timestamp": "2025-07-19T07:29:43.780695"
+  },
+  {
+    "test": "Mock Password Hashing",
+    "status": "PASS",
+    "details": "Simulated secure password hashing with bcrypt",
+    "timestamp": "2025-07-19T07:29:43.780708"
+  },
+  {
+    "test": "Mock JWT Security",
+    "status": "PASS",
+    "details": "Simulated secure JWT token generation and validation",
+    "timestamp": "2025-07-19T07:29:43.780716"
+  },
+  {
+    "test": "Mock RBAC Security",
+    "status": "PASS",
+    "details": "Simulated proper role-based access restrictions",
+    "timestamp": "2025-07-19T07:29:43.780727"
+  },
+  {
+    "test": "Mock Token Expiration",
+    "status": "PASS",
+    "details": "Simulated proper token expiration handling",
+    "timestamp": "2025-07-19T07:29:43.780734"
+  },
+  {
+    "test": "Mock Token Rotation",
+    "status": "PASS",
+    "details": "Simulated secure refresh token rotation",
+    "timestamp": "2025-07-19T07:29:43.780743"
+  }
+]
