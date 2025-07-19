@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Flask API for Smart Village Management with JWT Authentication
+Pure Flask API for Smart Village Management
 Compatible with deployment platforms
 """
 import os
@@ -13,49 +13,29 @@ from flask_cors import CORS
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import hashlib
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
-
-# Add src directory to Python path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
-
-# Import our authentication modules
-from src.auth import setup_jwt, AuthService
-from src.api.auth import auth_bp
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Database configuration - Load from environment variables
+# Database configuration
 DB_CONFIG = {
-    'host': os.getenv('DB_HOST', '[REDACTED_HOST]'),
-    'port': int(os.getenv('DB_PORT', 25060)),
-    'database': os.getenv('DB_NAME', 'defaultdb'),
-    'user': os.getenv('DB_USER', 'doadmin'),
-    'password': os.getenv('DB_PASSWORD', '[REDACTED]'),
+    'host': '[REDACTED_HOST]',
+    'port': 25060,
+    'database': 'defaultdb',
+    'user': 'doadmin',
+    'password': '[REDACTED]',
     'sslmode': 'require'
 }
 
 # Create Flask app
 app = Flask(__name__)
-
-# Setup CORS
 CORS(app, origins=[
     "https://wnhfnyob.manussite.space",
-    "https://kqpcvvco.manussite.space",
     "http://localhost:3000",
     "http://localhost:5173",
     "http://localhost:8000"
 ])
-
-# Setup JWT
-jwt = setup_jwt(app)
-
-# Register authentication blueprint
-app.register_blueprint(auth_bp)
 
 def get_db_connection():
     """Get database connection"""
@@ -133,38 +113,23 @@ def create_tables():
         return False
 
 def hash_password(password):
-    """Hash password using SHA-256 (for backward compatibility)"""
+    """Hash password using SHA256"""
     return hashlib.sha256(password.encode()).hexdigest()
 
-# Initialize database tables
+# Initialize database on startup
 create_tables()
 
 @app.route('/')
 def root():
     """Root endpoint"""
     return jsonify({
-        "message": "Smart Village Management API with JWT Authentication",
-        "version": "2.0.0",
+        "message": "Smart Village Management API",
+        "version": "1.0.0",
         "status": "running",
-        "authentication": "JWT-enabled",
         "endpoints": {
-            "auth": {
-                "login": "POST /auth/login",
-                "register": "POST /auth/register", 
-                "profile": "GET /auth/me",
-                "update_profile": "PATCH /auth/me",
-                "refresh": "POST /auth/refresh",
-                "logout": "POST /auth/logout"
-            },
-            "users": {
-                "list": "GET /api/v1/users",
-                "create": "POST /api/v1/users",
-                "get": "GET /api/v1/users/<id>",
-                "update": "PUT /api/v1/users/<id>",
-                "delete": "DELETE /api/v1/users/<id>",
-                "stats": "GET /api/v1/users/stats"
-            },
-            "health": "GET /health"
+            "health": "/health",
+            "users": "/api/v1/users",
+            "docs": "Flask API - No Swagger UI"
         }
     })
 
@@ -179,22 +144,29 @@ def health_check():
             cur.close()
             conn.close()
             db_status = "connected"
+            status = "healthy"
         else:
             db_status = "disconnected"
+            status = "unhealthy"
+            
+        return jsonify({
+            "status": status,
+            "database": db_status,
+            "version": "1.0.0",
+            "timestamp": datetime.now().isoformat()
+        })
     except Exception as e:
-        db_status = f"error: {str(e)}"
-    
-    return jsonify({
-        "status": "healthy",
-        "database": db_status,
-        "timestamp": datetime.utcnow().isoformat(),
-        "authentication": "JWT-enabled"
-    })
+        logger.error(f"Health check failed: {e}")
+        return jsonify({
+            "status": "unhealthy",
+            "database": "error",
+            "error": str(e),
+            "version": "1.0.0"
+        }), 503
 
-# Legacy API endpoints (keeping for backward compatibility)
 @app.route('/api/v1/users', methods=['GET'])
 def get_users():
-    """Get all users (legacy endpoint)"""
+    """Get all users"""
     try:
         conn = get_db_connection()
         if not conn:
@@ -202,8 +174,9 @@ def get_users():
             
         cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute("""
-            SELECT id, username, email, full_name, phone, is_active, is_verified,
-                   role, status, address, house_number, id_card_number, created_at, updated_at
+            SELECT id, username, email, full_name, phone, is_active, is_verified, 
+                   role, status, address, house_number, id_card_number, 
+                   created_at, updated_at, last_login, notes
             FROM users 
             ORDER BY created_at DESC
         """)
@@ -218,7 +191,10 @@ def get_users():
                 if isinstance(value, datetime):
                     user[key] = value.isoformat()
         
-        return jsonify({"users": users})
+        return jsonify({
+            "users": users,
+            "total": len(users)
+        })
         
     except Exception as e:
         logger.error(f"Failed to get users: {e}")
@@ -226,13 +202,11 @@ def get_users():
 
 @app.route('/api/v1/users', methods=['POST'])
 def create_user():
-    """Create new user (legacy endpoint)"""
+    """Create new user"""
     try:
         data = request.get_json()
         
-        if not data:
-            return jsonify({"error": "No data provided"}), 400
-        
+        # Validate required fields
         required_fields = ['username', 'email', 'full_name', 'password']
         for field in required_fields:
             if field not in data:
@@ -244,39 +218,32 @@ def create_user():
             
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
-        # Hash password using bcrypt for new users
-        hashed_password = AuthService.hash_password(data['password'])
+        # Hash password
+        hashed_password = hash_password(data['password'])
         
-        query = """
+        # Insert user
+        cur.execute("""
             INSERT INTO users (username, email, full_name, phone, hashed_password, 
-                             is_active, is_verified, role, status, address, 
-                             house_number, id_card_number, notes)
+                             role, status, address, house_number, id_card_number, notes)
             VALUES (%(username)s, %(email)s, %(full_name)s, %(phone)s, %(hashed_password)s,
-                   %(is_active)s, %(is_verified)s, %(role)s, %(status)s, %(address)s, 
-                   %(house_number)s, %(id_card_number)s, %(notes)s)
+                    %(role)s, %(status)s, %(address)s, %(house_number)s, %(id_card_number)s, %(notes)s)
             RETURNING id, username, email, full_name, phone, is_active, is_verified,
                      role, status, address, house_number, id_card_number, created_at, updated_at
-        """
-        
-        params = {
+        """, {
             'username': data['username'],
             'email': data['email'],
             'full_name': data['full_name'],
             'phone': data.get('phone'),
             'hashed_password': hashed_password,
-            'is_active': data.get('is_active', True),
-            'is_verified': data.get('is_verified', False),
             'role': data.get('role', 'RESIDENT'),
             'status': data.get('status', 'PENDING'),
             'address': data.get('address'),
             'house_number': data.get('house_number'),
             'id_card_number': data.get('id_card_number'),
             'notes': data.get('notes')
-        }
+        })
         
-        cur.execute(query, params)
         user = cur.fetchone()
-        
         conn.commit()
         cur.close()
         conn.close()
@@ -299,12 +266,9 @@ def create_user():
 
 @app.route('/api/v1/users/<int:user_id>', methods=['PUT'])
 def update_user(user_id):
-    """Update user (legacy endpoint)"""
+    """Update user"""
     try:
         data = request.get_json()
-        
-        if not data:
-            return jsonify({"error": "No data provided"}), 400
         
         conn = get_db_connection()
         if not conn:
@@ -312,29 +276,26 @@ def update_user(user_id):
             
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
-        # Build dynamic update query
+        # Build update query dynamically
         update_fields = []
         params = {'user_id': user_id}
         
-        allowed_fields = ['username', 'email', 'full_name', 'phone', 'is_active', 
-                         'is_verified', 'role', 'status', 'address', 'house_number', 
-                         'id_card_number', 'notes']
+        allowed_fields = ['username', 'email', 'full_name', 'phone', 'role', 'status', 
+                         'address', 'house_number', 'id_card_number', 'notes', 'is_active', 'is_verified']
         
         for field in allowed_fields:
             if field in data:
                 update_fields.append(f"{field} = %({field})s")
                 params[field] = data[field]
         
-        # Handle password update
         if 'password' in data:
-            hashed_password = AuthService.hash_password(data['password'])
             update_fields.append("hashed_password = %(hashed_password)s")
-            params['hashed_password'] = hashed_password
+            params['hashed_password'] = hash_password(data['password'])
         
         if not update_fields:
             return jsonify({"error": "No valid fields to update"}), 400
         
-        update_fields.append("updated_at = NOW()")
+        update_fields.append("updated_at = now()")
         
         query = f"""
             UPDATE users 
@@ -372,7 +333,7 @@ def update_user(user_id):
 
 @app.route('/api/v1/users/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
-    """Delete user (legacy endpoint)"""
+    """Delete user"""
     try:
         conn = get_db_connection()
         if not conn:
@@ -396,7 +357,7 @@ def delete_user(user_id):
 
 @app.route('/api/v1/users/stats')
 def get_user_stats():
-    """Get user statistics (legacy endpoint)"""
+    """Get user statistics"""
     try:
         conn = get_db_connection()
         if not conn:
