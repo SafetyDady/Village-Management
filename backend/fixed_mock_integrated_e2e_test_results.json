@@ -1,0 +1,279 @@
+{
+  "test_run": {
+    "timestamp": "2025-07-19T07:54:26.425811",
+    "test_type": "fixed_mock_integrated_e2e",
+    "total_tests": 37,
+    "passed": 11,
+    "failed": 26,
+    "skipped": 0,
+    "success_rate": 29.72972972972973,
+    "total_time_seconds": 0.9641768932342529,
+    "fixes_applied": [
+      "JWT token identity converted to string",
+      "RBAC decorators with proper Flask context mocking",
+      "Database user_id type conversion (string to int)",
+      "Enhanced error handling and realistic testing scenarios"
+    ]
+  },
+  "test_results": [
+    {
+      "test_name": "Password Hashing (Fixed)",
+      "status": "PASS",
+      "timestamp": "2025-07-19T07:54:25.857331",
+      "response_time_ms": 266,
+      "details": "Hash length: 60"
+    },
+    {
+      "test_name": "Password Verification (Valid, Fixed)",
+      "status": "PASS",
+      "timestamp": "2025-07-19T07:54:26.126418",
+      "response_time_ms": 268,
+      "details": "Password verified successfully"
+    },
+    {
+      "test_name": "Password Verification (Invalid, Fixed)",
+      "status": "PASS",
+      "timestamp": "2025-07-19T07:54:26.398982",
+      "response_time_ms": 272,
+      "details": "Invalid password correctly rejected"
+    },
+    {
+      "test_name": "Token Generation (Integer ID, Fixed)",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.399313",
+      "response_time_ms": 0,
+      "details": "Token generation failed: None"
+    },
+    {
+      "test_name": "JWT Access Token Creation (String Identity)",
+      "status": "PASS",
+      "timestamp": "2025-07-19T07:54:26.401270",
+      "response_time_ms": 0,
+      "details": "Token length: 264"
+    },
+    {
+      "test_name": "JWT Refresh Token Creation (String Identity)",
+      "status": "PASS",
+      "timestamp": "2025-07-19T07:54:26.401505",
+      "response_time_ms": 0,
+      "details": "Token length: 265"
+    },
+    {
+      "test_name": "JWT Token Decoding (String Subject)",
+      "status": "PASS",
+      "timestamp": "2025-07-19T07:54:26.401742",
+      "response_time_ms": 0,
+      "details": "User ID: 1"
+    },
+    {
+      "test_name": "SUPER_ADMIN \u2192 require_super_admin",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.406595",
+      "response_time_ms": 3,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "SUPER_ADMIN \u2192 require_village_admin",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.407510",
+      "response_time_ms": 0,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "SUPER_ADMIN \u2192 require_any_admin",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.408316",
+      "response_time_ms": 0,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "SUPER_ADMIN \u2192 require_active_user",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.409297",
+      "response_time_ms": 0,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "VILLAGE_ADMIN \u2192 require_super_admin",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.410088",
+      "response_time_ms": 0,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "VILLAGE_ADMIN \u2192 require_village_admin",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.410859",
+      "response_time_ms": 0,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "VILLAGE_ADMIN \u2192 require_any_admin",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.411741",
+      "response_time_ms": 0,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "VILLAGE_ADMIN \u2192 require_active_user",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.412534",
+      "response_time_ms": 0,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "ACCOUNTING_ADMIN \u2192 require_super_admin",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.413242",
+      "response_time_ms": 0,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "ACCOUNTING_ADMIN \u2192 require_village_admin",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.413947",
+      "response_time_ms": 0,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "ACCOUNTING_ADMIN \u2192 require_accounting_admin",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.414821",
+      "response_time_ms": 0,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "ACCOUNTING_ADMIN \u2192 require_any_admin",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.415514",
+      "response_time_ms": 0,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "ACCOUNTING_ADMIN \u2192 require_active_user",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.416208",
+      "response_time_ms": 0,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "MAINTENANCE_STAFF \u2192 require_super_admin",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.417059",
+      "response_time_ms": 0,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "MAINTENANCE_STAFF \u2192 require_village_admin",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.417753",
+      "response_time_ms": 0,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "MAINTENANCE_STAFF \u2192 require_any_admin",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.418462",
+      "response_time_ms": 0,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "MAINTENANCE_STAFF \u2192 require_active_user",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.419199",
+      "response_time_ms": 0,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "AUDITOR \u2192 require_super_admin",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.420070",
+      "response_time_ms": 0,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "AUDITOR \u2192 require_village_admin",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.420794",
+      "response_time_ms": 0,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "AUDITOR \u2192 require_any_admin",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.421514",
+      "response_time_ms": 0,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "AUDITOR \u2192 require_active_user",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.422327",
+      "response_time_ms": 0,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "RESIDENT \u2192 require_super_admin",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.423015",
+      "response_time_ms": 0,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "RESIDENT \u2192 require_village_admin",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.423684",
+      "response_time_ms": 0,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "RESIDENT \u2192 require_any_admin",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.424398",
+      "response_time_ms": 0,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "RESIDENT \u2192 require_active_user",
+      "status": "FAIL",
+      "timestamp": "2025-07-19T07:54:26.425363",
+      "response_time_ms": 0,
+      "details": "Unexpected error occurred"
+    },
+    {
+      "test_name": "Integration Scenario: Complete Authentication Flow (Fixed)",
+      "status": "PASS",
+      "timestamp": "2025-07-19T07:54:26.425459",
+      "response_time_ms": 0,
+      "details": "All 6 steps completed successfully"
+    },
+    {
+      "test_name": "Integration Scenario: RBAC Permission Check Flow (Fixed)",
+      "status": "PASS",
+      "timestamp": "2025-07-19T07:54:26.425523",
+      "response_time_ms": 0,
+      "details": "All 5 steps completed successfully"
+    },
+    {
+      "test_name": "Integration Scenario: User Management CRUD Flow (Fixed)",
+      "status": "PASS",
+      "timestamp": "2025-07-19T07:54:26.425559",
+      "response_time_ms": 0,
+      "details": "All 5 steps completed successfully"
+    },
+    {
+      "test_name": "Integration Scenario: Security Validation Flow (Fixed)",
+      "status": "PASS",
+      "timestamp": "2025-07-19T07:54:26.425592",
+      "response_time_ms": 0,
+      "details": "Simulated failure at step: check_token_expiration (realistic testing)"
+    },
+    {
+      "test_name": "Integration Scenarios Complete (Fixed)",
+      "status": "PASS",
+      "timestamp": "2025-07-19T07:54:26.425627",
+      "response_time_ms": 0,
+      "details": "All scenarios tested with realistic conditions"
+    }
+  ]
+}

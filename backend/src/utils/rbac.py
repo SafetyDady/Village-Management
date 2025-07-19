@@ -17,6 +17,13 @@ def get_current_user():
         current_user_id = get_jwt_identity()
         if not current_user_id:
             return None
+        
+        # Convert string user_id to int for database query
+        try:
+            user_id_int = int(current_user_id)
+        except (ValueError, TypeError):
+            print(f"Invalid user ID format: {current_user_id}")
+            return None
             
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -25,7 +32,7 @@ def get_current_user():
             SELECT id, email, full_name, role, is_active, is_verified
             FROM users 
             WHERE id = %s
-        """, (current_user_id,))
+        """, (user_id_int,))
         
         user_data = cursor.fetchone()
         cursor.close()

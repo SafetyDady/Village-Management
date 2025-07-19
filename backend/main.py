@@ -25,6 +25,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 from src.jwt_setup import setup_jwt
 from src.auth import AuthService
 from src.api.auth import auth_bp
+from src.api.users_legacy import users_bp
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -57,6 +58,9 @@ jwt = setup_jwt(app)
 
 # Register authentication blueprint
 app.register_blueprint(auth_bp)
+
+# Register users blueprint (with RBAC protection)
+app.register_blueprint(users_bp)
 
 def get_db_connection():
     """Get database connection"""
@@ -158,12 +162,13 @@ def root():
                 "logout": "POST /auth/logout"
             },
             "users": {
-                "list": "GET /api/v1/users",
-                "create": "POST /api/v1/users",
-                "get": "GET /api/v1/users/<id>",
-                "update": "PUT /api/v1/users/<id>",
-                "delete": "DELETE /api/v1/users/<id>",
-                "stats": "GET /api/v1/users/stats"
+                "list": "GET /api/v1/users (Admin only)",
+                "create": "POST /api/v1/users (Village Admin+)",
+                "get": "GET /api/v1/users/<id> (Authenticated)",
+                "update": "PUT /api/v1/users/<id> (Village Admin+)",
+                "delete": "DELETE /api/v1/users/<id> (Super Admin only)",
+                "stats": "GET /api/v1/users/stats (Admin only)",
+                "toggle_status": "POST /api/v1/users/<id>/toggle-status (Village Admin+)"
             },
             "health": "GET /health"
         }
@@ -192,248 +197,8 @@ def health_check():
         "authentication": "JWT-enabled"
     })
 
-# Legacy API endpoints (keeping for backward compatibility)
-@app.route('/api/v1/users', methods=['GET'])
-def get_users():
-    """Get all users (legacy endpoint)"""
-    try:
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({"error": "Database connection failed"}), 500
-            
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("""
-            SELECT id, username, email, full_name, phone, is_active, is_verified,
-                   role, status, address, house_number, id_card_number, created_at, updated_at
-            FROM users 
-            ORDER BY created_at DESC
-        """)
-        
-        users = cur.fetchall()
-        cur.close()
-        conn.close()
-        
-        # Convert datetime objects to strings
-        for user in users:
-            for key, value in user.items():
-                if isinstance(value, datetime):
-                    user[key] = value.isoformat()
-        
-        return jsonify({"users": users})
-        
-    except Exception as e:
-        logger.error(f"Failed to get users: {e}")
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/v1/users', methods=['POST'])
-def create_user():
-    """Create new user (legacy endpoint)"""
-    try:
-        data = request.get_json()
-        
-        if not data:
-            return jsonify({"error": "No data provided"}), 400
-        
-        required_fields = ['username', 'email', 'full_name', 'password']
-        for field in required_fields:
-            if field not in data:
-                return jsonify({"error": f"Missing required field: {field}"}), 400
-        
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({"error": "Database connection failed"}), 500
-            
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        
-        # Hash password using bcrypt for new users
-        hashed_password = AuthService.hash_password(data['password'])
-        
-        query = """
-            INSERT INTO users (username, email, full_name, phone, hashed_password, 
-                             is_active, is_verified, role, status, address, 
-                             house_number, id_card_number, notes)
-            VALUES (%(username)s, %(email)s, %(full_name)s, %(phone)s, %(hashed_password)s,
-                   %(is_active)s, %(is_verified)s, %(role)s, %(status)s, %(address)s, 
-                   %(house_number)s, %(id_card_number)s, %(notes)s)
-            RETURNING id, username, email, full_name, phone, is_active, is_verified,
-                     role, status, address, house_number, id_card_number, created_at, updated_at
-        """
-        
-        params = {
-            'username': data['username'],
-            'email': data['email'],
-            'full_name': data['full_name'],
-            'phone': data.get('phone'),
-            'hashed_password': hashed_password,
-            'is_active': data.get('is_active', True),
-            'is_verified': data.get('is_verified', False),
-            'role': data.get('role', 'RESIDENT'),
-            'status': data.get('status', 'PENDING'),
-            'address': data.get('address'),
-            'house_number': data.get('house_number'),
-            'id_card_number': data.get('id_card_number'),
-            'notes': data.get('notes')
-        }
-        
-        cur.execute(query, params)
-        user = cur.fetchone()
-        
-        conn.commit()
-        cur.close()
-        conn.close()
-        
-        # Convert datetime objects to strings
-        for key, value in user.items():
-            if isinstance(value, datetime):
-                user[key] = value.isoformat()
-        
-        return jsonify({
-            "message": "User created successfully",
-            "user": user
-        }), 201
-        
-    except psycopg2.IntegrityError as e:
-        return jsonify({"error": "Username or email already exists"}), 409
-    except Exception as e:
-        logger.error(f"Failed to create user: {e}")
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/v1/users/<int:user_id>', methods=['PUT'])
-def update_user(user_id):
-    """Update user (legacy endpoint)"""
-    try:
-        data = request.get_json()
-        
-        if not data:
-            return jsonify({"error": "No data provided"}), 400
-        
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({"error": "Database connection failed"}), 500
-            
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        
-        # Build dynamic update query
-        update_fields = []
-        params = {'user_id': user_id}
-        
-        allowed_fields = ['username', 'email', 'full_name', 'phone', 'is_active', 
-                         'is_verified', 'role', 'status', 'address', 'house_number', 
-                         'id_card_number', 'notes']
-        
-        for field in allowed_fields:
-            if field in data:
-                update_fields.append(f"{field} = %({field})s")
-                params[field] = data[field]
-        
-        # Handle password update
-        if 'password' in data:
-            hashed_password = AuthService.hash_password(data['password'])
-            update_fields.append("hashed_password = %(hashed_password)s")
-            params['hashed_password'] = hashed_password
-        
-        if not update_fields:
-            return jsonify({"error": "No valid fields to update"}), 400
-        
-        update_fields.append("updated_at = NOW()")
-        
-        query = f"""
-            UPDATE users 
-            SET {', '.join(update_fields)}
-            WHERE id = %(user_id)s
-            RETURNING id, username, email, full_name, phone, is_active, is_verified,
-                     role, status, address, house_number, id_card_number, created_at, updated_at
-        """
-        
-        cur.execute(query, params)
-        user = cur.fetchone()
-        
-        if not user:
-            return jsonify({"error": "User not found"}), 404
-        
-        conn.commit()
-        cur.close()
-        conn.close()
-        
-        # Convert datetime objects to strings
-        for key, value in user.items():
-            if isinstance(value, datetime):
-                user[key] = value.isoformat()
-        
-        return jsonify({
-            "message": "User updated successfully",
-            "user": user
-        })
-        
-    except psycopg2.IntegrityError as e:
-        return jsonify({"error": "Username or email already exists"}), 409
-    except Exception as e:
-        logger.error(f"Failed to update user: {e}")
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/v1/users/<int:user_id>', methods=['DELETE'])
-def delete_user(user_id):
-    """Delete user (legacy endpoint)"""
-    try:
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({"error": "Database connection failed"}), 500
-            
-        cur = conn.cursor()
-        cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
-        
-        if cur.rowcount == 0:
-            return jsonify({"error": "User not found"}), 404
-        
-        conn.commit()
-        cur.close()
-        conn.close()
-        
-        return jsonify({"message": "User deleted successfully"})
-        
-    except Exception as e:
-        logger.error(f"Failed to delete user: {e}")
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/v1/users/stats')
-def get_user_stats():
-    """Get user statistics (legacy endpoint)"""
-    try:
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({"error": "Database connection failed"}), 500
-            
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        
-        # Get total users
-        cur.execute("SELECT COUNT(*) as total FROM users")
-        total = cur.fetchone()['total']
-        
-        # Get users by role
-        cur.execute("SELECT role, COUNT(*) as count FROM users GROUP BY role")
-        by_role = {row['role']: row['count'] for row in cur.fetchall()}
-        
-        # Get users by status
-        cur.execute("SELECT status, COUNT(*) as count FROM users GROUP BY status")
-        by_status = {row['status']: row['count'] for row in cur.fetchall()}
-        
-        # Get active users
-        cur.execute("SELECT COUNT(*) as active FROM users WHERE is_active = true")
-        active = cur.fetchone()['active']
-        
-        cur.close()
-        conn.close()
-        
-        return jsonify({
-            "total_users": total,
-            "active_users": active,
-            "by_role": by_role,
-            "by_status": by_status
-        })
-        
-    except Exception as e:
-        logger.error(f"Failed to get user stats: {e}")
-        return jsonify({"error": str(e)}), 500
+# Legacy endpoints removed - now using RBAC-protected endpoints in users_bp blueprint
+# All user management endpoints are now protected with appropriate role-based access control
 
 @app.errorhandler(404)
 def not_found(error):

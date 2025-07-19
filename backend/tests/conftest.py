@@ -34,7 +34,7 @@ def mock_db_connection():
 def sample_user():
     """Sample user data for testing"""
     return {
-        'id': 'test-user-id-123',
+        'id': 123,  # Use numeric ID instead of string
         'email': 'test@village.com',
         'full_name': 'Test User',
         'hashed_password': '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/VJBzxqWPy',  # 'password123'

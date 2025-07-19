@@ -48,12 +48,15 @@ class AuthService:
             return None
     
     @staticmethod
-    def get_user_by_id(user_id: str) -> dict:
-        """Get user by ID"""
+    def get_user_by_id(user_id) -> dict:
+        """Get user by ID (accepts both string and int)"""
         try:
+            # Convert to int for database query
+            user_id_int = int(user_id) if isinstance(user_id, str) else user_id
+            
             with get_db_connection() as conn:
                 cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-                cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+                cursor.execute("SELECT * FROM users WHERE id = %s", (user_id_int,))
                 row = cursor.fetchone()
                 return dict(row) if row else None
         except Exception as e:
@@ -126,16 +129,19 @@ class AuthService:
             return None
     
     @staticmethod
-    def generate_tokens(user_id: str) -> dict:
+    def generate_tokens(user_id) -> dict:
         """Generate JWT access and refresh tokens"""
         try:
+            # Ensure user_id is string for JWT subject claim
+            user_id_str = str(user_id)
+            
             access_token = create_access_token(
-                identity=user_id,
+                identity=user_id_str,
                 expires_delta=timedelta(hours=1)
             )
             
             refresh_token = create_refresh_token(
-                identity=user_id,
+                identity=user_id_str,
                 expires_delta=timedelta(days=30)
             )
             
@@ -174,9 +180,12 @@ class AuthService:
             return None
     
     @staticmethod
-    def update_user(user_id: str, update_data: dict) -> dict:
-        """Update user data"""
+    def update_user(user_id, update_data: dict) -> dict:
+        """Update user data (accepts both string and int for user_id)"""
         try:
+            # Convert to int for database query
+            user_id_int = int(user_id) if isinstance(user_id, str) else user_id
+            
             # Build dynamic update query
             allowed_fields = ['full_name', 'phone', 'address', 'house_number', 'notes']
             update_fields = []
@@ -193,7 +202,7 @@ class AuthService:
             # Add updated_at
             update_fields.append("updated_at = %s")
             update_values.append(datetime.utcnow())
-            update_values.append(user_id)
+            update_values.append(user_id_int)
             
             with get_db_connection() as conn:
                 cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)

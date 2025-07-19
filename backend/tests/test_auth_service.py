@@ -112,14 +112,20 @@ class TestAuthService:
         # Mock cursor to return sample user
         mock_cursor.fetchone.return_value = sample_user
         
-        # Test
-        result = AuthService.get_user_by_id("test-user-id-123")
+        # Test with numeric user_id (both int and string)
+        result1 = AuthService.get_user_by_id(123)  # Integer
+        result2 = AuthService.get_user_by_id("123")  # Numeric string
         
         # Assertions
-        assert result is not None
-        assert result['id'] == sample_user['id']
-        assert result['email'] == sample_user['email']
-        mock_cursor.execute.assert_called_once()
+        assert result1 is not None
+        assert result1['id'] == sample_user['id']
+        assert result1['email'] == sample_user['email']
+        
+        assert result2 is not None
+        assert result2['id'] == sample_user['id']
+        assert result2['email'] == sample_user['email']
+        
+        assert mock_cursor.execute.call_count == 2
     
     @patch('src.auth.get_db_connection')
     def test_create_user_success(self, mock_get_db):
@@ -296,19 +302,19 @@ class TestAuthService:
         
         # Mock updated user data
         updated_user = {
-            'id': 'test-user-id-123',
+            'id': 123,  # Use numeric ID
             'full_name': 'Updated Name',
             'phone': '0123456789',
             'updated_at': datetime.utcnow()
         }
         mock_cursor.fetchone.return_value = updated_user
         
-        # Test
+        # Test with numeric user_id
         update_data = {
             'full_name': 'Updated Name',
             'phone': '0123456789'
         }
-        result = AuthService.update_user("test-user-id-123", update_data)
+        result = AuthService.update_user(123, update_data)  # Use numeric ID
         
         # Assertions
         assert result is not None

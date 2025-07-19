@@ -229,7 +229,7 @@ class TestAuthEndpoints:
         mock_get_user.return_value = sample_user
         
         with mock_app.app_context():
-            access_token = create_access_token(identity=sample_user['id'])
+            access_token = create_access_token(identity=str(sample_user['id']))
             
             response = client.get('/auth/me', headers={
                 'Authorization': f'Bearer {access_token}'
@@ -264,7 +264,7 @@ class TestAuthEndpoints:
         }
         
         with mock_app.app_context():
-            access_token = create_access_token(identity=sample_user['id'])
+            access_token = create_access_token(identity=str(sample_user['id']))
             
             response = client.patch('/auth/me',
                                   data=json.dumps(update_data),

@@ -56,8 +56,8 @@ class TestRBACDecorators:
             # Create test endpoint
             self.create_test_endpoint(require_active_user, app)
             
-            # Create access token
-            access_token = create_access_token(identity=sample_user['id'])
+            # Create access token with string identity
+            access_token = create_access_token(identity=str(sample_user['id']))
             
             # Make request with token
             response = client.get('/test', headers={
@@ -138,7 +138,7 @@ class TestRBACDecorators:
         
         with app.app_context():
             self.create_test_endpoint(require_super_admin, app)
-            access_token = create_access_token(identity=sample_user['id'])
+            access_token = create_access_token(identity=str(sample_user['id']))
             
             response = client.get('/test', headers={
                 'Authorization': f'Bearer {access_token}'
@@ -190,7 +190,7 @@ class TestRBACDecorators:
         
         with app.app_context():
             self.create_test_endpoint(require_village_admin, app)
-            access_token = create_access_token(identity=sample_user['id'])
+            access_token = create_access_token(identity=str(sample_user['id']))
             
             response = client.get('/test', headers={
                 'Authorization': f'Bearer {access_token}'
@@ -270,7 +270,7 @@ class TestRBACDecorators:
         
         with app.app_context():
             self.create_test_endpoint(require_any_admin, app)
-            access_token = create_access_token(identity=sample_user['id'])
+            access_token = create_access_token(identity=str(sample_user['id']))
             
             response = client.get('/test', headers={
                 'Authorization': f'Bearer {access_token}'
@@ -348,7 +348,7 @@ class TestRBACDecorators:
         # Mock cursor to return None
         mock_cursor.fetchone.return_value = None
         
-        with patch('src.utils.rbac.get_jwt_identity', return_value='nonexistent-id'):
+        with patch('src.utils.rbac.get_jwt_identity', return_value='999'):  # Use numeric string
             result = get_current_user()
             
             assert result is None
