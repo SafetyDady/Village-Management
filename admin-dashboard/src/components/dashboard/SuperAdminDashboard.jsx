@@ -35,6 +35,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu.jsx'
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarProvider } from '@/components/ui/sidebar.jsx'
+import { useAuth } from '../../contexts/AuthContext'
 import UserManagement from './UserManagement.jsx'
 import '../../styles/App.css'
 
@@ -118,11 +119,22 @@ const recentActivities = [
   }
 ]
 
-function SuperAdminDashboard({ user, onLogout }) {
+function SuperAdminDashboard() {
+  const { user, logout } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [activeItem, setActiveItem] = useState('Dashboard')
   const [darkMode, setDarkMode] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await logout()
+      // Navigation will be handled by AuthContext
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
+  }
 
   // Update time every minute
   useEffect(() => {
@@ -300,7 +312,7 @@ function SuperAdminDashboard({ user, onLogout }) {
                         {darkMode ? 'Light Mode' : 'Dark Mode'}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-red-600">
+                      <DropdownMenuItem className="text-red-600" onClick={handleLogout}>
                         <LogOut className="mr-2 h-4 w-4" />
                         Logout
                       </DropdownMenuItem>

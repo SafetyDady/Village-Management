@@ -41,7 +41,7 @@ def login():
         
         if not data:
             return jsonify({
-                'error': 'invalid_request',
+                'error': 'Invalid request',
                 'message': 'Request must contain JSON data'
             }), 400
         
@@ -51,14 +51,14 @@ def login():
         # Validation
         if not email or not password:
             return jsonify({
-                'error': 'missing_credentials',
+                'error': 'Missing required fields',
                 'message': 'Email and password are required'
             }), 400
         
         if not validate_email(email):
             return jsonify({
-                'error': 'invalid_email',
-                'message': 'Invalid email format'
+                'error': 'Invalid email format',
+                'message': 'Please provide a valid email address'
             }), 400
         
         # Authenticate user
@@ -66,30 +66,37 @@ def login():
         
         if not user:
             return jsonify({
-                'error': 'invalid_credentials',
+                'error': 'Invalid credentials',
                 'message': 'Invalid email or password'
             }), 401
         
-        # Create tokens
-        tokens = AuthService.create_tokens(user)
+        # Generate tokens
+        tokens = AuthService.generate_tokens(user['id'])
+        
+        if not tokens:
+            return jsonify({
+                'error': 'Token generation failed',
+                'message': 'Failed to generate authentication tokens'
+            }), 500
         
         # Return success response
         return jsonify({
-            'message': 'Login successful',
+            'message': 'เข้าสู่ระบบสำเร็จ',
             'user': {
                 'id': user['id'],
                 'email': user['email'],
                 'full_name': user['full_name'],
                 'role': user['role'],
-                'status': user['status']
+                'is_active': user['is_active']
             },
-            **tokens
+            'access_token': tokens['access_token'],
+            'refresh_token': tokens['refresh_token']
         }), 200
         
     except Exception as e:
         print(f"Login error: {e}")
         return jsonify({
-            'error': 'server_error',
+            'error': 'Server error',
             'message': 'An error occurred during login'
         }), 500
 
@@ -102,7 +109,7 @@ def register():
         
         if not data:
             return jsonify({
-                'error': 'invalid_request',
+                'error': 'Invalid request',
                 'message': 'Request must contain JSON data'
             }), 400
         
@@ -113,145 +120,118 @@ def register():
         
         if not all([email, password, full_name]):
             return jsonify({
-                'error': 'missing_fields',
+                'error': 'Missing required fields',
                 'message': 'Email, password, and full_name are required'
             }), 400
         
         # Validate email
         if not validate_email(email):
             return jsonify({
-                'error': 'invalid_email',
-                'message': 'Invalid email format'
+                'error': 'Invalid email format',
+                'message': 'Please provide a valid email address'
             }), 400
         
-        # Validate password
-        is_valid, password_message = validate_password(password)
-        if not is_valid:
+        # Simple password validation for testing
+        if len(password) < 6:
             return jsonify({
-                'error': 'invalid_password',
-                'message': password_message
+                'error': 'Password too weak',
+                'message': 'Password must be at least 6 characters long'
             }), 400
         
         # Check if user already exists
         existing_user = AuthService.get_user_by_email(email)
         if existing_user:
             return jsonify({
-                'error': 'user_exists',
+                'error': 'User already exists',
                 'message': 'User with this email already exists'
             }), 409
         
-        # Hash password
-        hashed_password = AuthService.hash_password(password)
-        
-        # Prepare user data
-        user_data = {
-            'username': email,  # Use email as username
-            'email': email,
-            'full_name': full_name,
-            'hashed_password': hashed_password,
-            'phone': data.get('phone'),
-            'role': data.get('role', 'RESIDENT'),
-            'status': 'PENDING',  # New users start as PENDING
-            'address': data.get('address'),
-            'house_number': data.get('house_number'),
-            'id_card_number': data.get('id_card_number'),
-            'is_active': True,
-            'is_verified': False,
-            'notes': data.get('notes')
-        }
-        
         # Create user
-        new_user = User.create(user_data)
+        new_user = AuthService.create_user(
+            email=email,
+            password=password,
+            full_name=full_name,
+            role=data.get('role', 'RESIDENT')
+        )
         
         if not new_user:
             return jsonify({
-                'error': 'creation_failed',
+                'error': 'Creation failed',
                 'message': 'Failed to create user'
             }), 500
         
-        # Return success response (without tokens - user needs approval)
+        # Return success response
         return jsonify({
-            'message': 'Registration successful. Your account is pending approval.',
+            'message': 'ลงทะเบียนสำเร็จ',
             'user': {
                 'id': new_user['id'],
                 'email': new_user['email'],
                 'full_name': new_user['full_name'],
                 'role': new_user['role'],
-                'status': new_user['status']
+                'is_active': new_user['is_active']
             }
         }), 201
         
     except Exception as e:
         print(f"Registration error: {e}")
         return jsonify({
-            'error': 'server_error',
+            'error': 'Server error',
             'message': 'An error occurred during registration'
         }), 500
 
 
 @auth_bp.route('/me', methods=['GET'])
-@jwt_required()
 @require_active_user
-def get_current_user():
+def get_current_user(current_user=None):
     """Get current user profile"""
     try:
-        current_user_id = get_jwt_identity()
-        user = AuthService.get_user_by_id(current_user_id)
-        
-        if not user:
+        if not current_user:
             return jsonify({
-                'error': 'user_not_found',
+                'error': 'User not found',
                 'message': 'User not found'
             }), 404
         
-        # Remove sensitive information
-        user_data = {
-            'id': user['id'],
-            'username': user['username'],
-            'email': user['email'],
-            'full_name': user['full_name'],
-            'phone': user['phone'],
-            'role': user['role'],
-            'status': user['status'],
-            'address': user['address'],
-            'house_number': user['house_number'],
-            'id_card_number': user['id_card_number'],
-            'is_active': user['is_active'],
-            'is_verified': user['is_verified'],
-            'created_at': user['created_at'].isoformat() if user['created_at'] else None,
-            'updated_at': user['updated_at'].isoformat() if user['updated_at'] else None,
-            'last_login': user['last_login'].isoformat() if user['last_login'] else None
-        }
-        
+        # Return user data
         return jsonify({
-            'user': user_data
+            'user': {
+                'id': current_user['id'],
+                'email': current_user['email'],
+                'full_name': current_user['full_name'],
+                'role': current_user['role'],
+                'is_active': current_user['is_active'],
+                'is_verified': current_user['is_verified']
+            }
         }), 200
         
     except Exception as e:
         print(f"Get current user error: {e}")
         return jsonify({
-            'error': 'server_error',
+            'error': 'Server error',
             'message': 'An error occurred while fetching user data'
         }), 500
 
 
 @auth_bp.route('/me', methods=['PATCH'])
-@jwt_required()
 @require_active_user
-def update_current_user():
+def update_current_user(current_user=None):
     """Update current user profile"""
     try:
-        current_user_id = get_jwt_identity()
+        if not current_user:
+            return jsonify({
+                'error': 'User not found',
+                'message': 'User not found'
+            }), 404
+        
         data = request.get_json()
         
         if not data:
             return jsonify({
-                'error': 'invalid_request',
+                'error': 'Invalid request',
                 'message': 'Request must contain JSON data'
             }), 400
         
         # Fields that users can update themselves
-        allowed_fields = ['full_name', 'phone', 'address', 'house_number']
+        allowed_fields = ['full_name', 'phone', 'address', 'house_number', 'notes']
         update_data = {}
         
         for field in allowed_fields:
@@ -260,47 +240,36 @@ def update_current_user():
         
         if not update_data:
             return jsonify({
-                'error': 'no_updates',
+                'error': 'No updates',
                 'message': 'No valid fields to update'
             }), 400
         
         # Update user
-        updated_user = User.update(current_user_id, update_data)
+        updated_user = AuthService.update_user(current_user['id'], update_data)
         
         if not updated_user:
             return jsonify({
-                'error': 'update_failed',
+                'error': 'Update failed',
                 'message': 'Failed to update user'
             }), 500
         
-        # Remove sensitive information
-        user_data = {
-            'id': updated_user['id'],
-            'username': updated_user['username'],
-            'email': updated_user['email'],
-            'full_name': updated_user['full_name'],
-            'phone': updated_user['phone'],
-            'role': updated_user['role'],
-            'status': updated_user['status'],
-            'address': updated_user['address'],
-            'house_number': updated_user['house_number'],
-            'id_card_number': updated_user['id_card_number'],
-            'is_active': updated_user['is_active'],
-            'is_verified': updated_user['is_verified'],
-            'created_at': updated_user['created_at'].isoformat() if updated_user['created_at'] else None,
-            'updated_at': updated_user['updated_at'].isoformat() if updated_user['updated_at'] else None,
-            'last_login': updated_user['last_login'].isoformat() if updated_user['last_login'] else None
-        }
-        
         return jsonify({
-            'message': 'Profile updated successfully',
-            'user': user_data
+            'message': 'อัปเดตข้อมูลสำเร็จ',
+            'user': {
+                'id': updated_user['id'],
+                'email': updated_user['email'],
+                'full_name': updated_user['full_name'],
+                'phone': updated_user.get('phone'),
+                'role': updated_user['role'],
+                'is_active': updated_user['is_active'],
+                'is_verified': updated_user['is_verified']
+            }
         }), 200
         
     except Exception as e:
         print(f"Update current user error: {e}")
         return jsonify({
-            'error': 'server_error',
+            'error': 'Server error',
             'message': 'An error occurred while updating user data'
         }), 500
 
@@ -310,29 +279,22 @@ def update_current_user():
 def refresh_token():
     """Refresh access token"""
     try:
-        current_user_id = get_jwt_identity()
-        user = AuthService.get_user_by_id(current_user_id)
+        new_access_token = AuthService.refresh_access_token()
         
-        if not user or not user.get('is_active', False):
+        if not new_access_token:
             return jsonify({
-                'error': 'user_inactive',
-                'message': 'User account is inactive'
+                'error': 'Token refresh failed',
+                'message': 'Failed to refresh access token'
             }), 401
         
-        # Create new access token
-        tokens = AuthService.create_tokens(user)
-        
         return jsonify({
-            'message': 'Token refreshed successfully',
-            'access_token': tokens['access_token'],
-            'token_type': tokens['token_type'],
-            'expires_in': tokens['expires_in']
+            'access_token': new_access_token
         }), 200
         
     except Exception as e:
         print(f"Token refresh error: {e}")
         return jsonify({
-            'error': 'server_error',
+            'error': 'Server error',
             'message': 'An error occurred while refreshing token'
         }), 500
 
@@ -344,6 +306,6 @@ def logout():
     # In a production system, you might want to blacklist the token
     # For now, we'll just return a success message
     return jsonify({
-        'message': 'Logout successful'
+        'message': 'ออกจากระบบสำเร็จ'
     }), 200
 

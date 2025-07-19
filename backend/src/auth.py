@@ -1,19 +1,23 @@
 """
-Authentication module for Village Management System
-Implements JWT-based authentication using Flask-JWT-Extended
+Authentication Service Module
+Handles JWT authentication, password hashing, and user management
 """
-import os
+
 import bcrypt
 from datetime import datetime, timedelta
-from flask import jsonify, request
-from flask_jwt_extended import (
-    JWTManager, create_access_token, create_refresh_token,
-    jwt_required, get_jwt_identity, get_jwt
-)
-from src.models import User
+from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity
 from src.database import get_db_connection
-from psycopg2.extras import RealDictCursor
+import psycopg2.extras
 
+# Import RBAC decorators from utils
+from src.utils.rbac import (
+    require_active_user,
+    require_super_admin,
+    require_village_admin,
+    require_accounting_admin,
+    require_any_admin,
+    get_current_user
+)
 
 class AuthService:
     """Authentication service class"""
@@ -35,7 +39,7 @@ class AuthService:
         """Get user by email"""
         try:
             with get_db_connection() as conn:
-                cursor = conn.cursor(cursor_factory=RealDictCursor)
+                cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
                 cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
                 row = cursor.fetchone()
                 return dict(row) if row else None
@@ -44,11 +48,11 @@ class AuthService:
             return None
     
     @staticmethod
-    def get_user_by_id(user_id: int) -> dict:
+    def get_user_by_id(user_id: str) -> dict:
         """Get user by ID"""
         try:
             with get_db_connection() as conn:
-                cursor = conn.cursor(cursor_factory=RealDictCursor)
+                cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
                 cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
                 row = cursor.fetchone()
                 return dict(row) if row else None
@@ -57,142 +61,168 @@ class AuthService:
             return None
     
     @staticmethod
-    def update_last_login(user_id: int):
-        """Update user's last login timestamp"""
+    def create_user(email: str, password: str, full_name: str, role: str = 'RESIDENT') -> dict:
+        """Create new user"""
         try:
+            hashed_password = AuthService.hash_password(password)
+            
             with get_db_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute(
-                    "UPDATE users SET last_login = NOW() WHERE id = %s",
-                    (user_id,)
-                )
+                cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                
+                cursor.execute("""
+                    INSERT INTO users (email, hashed_password, full_name, role, is_active, is_verified, created_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    RETURNING *
+                """, (
+                    email.lower().strip(),
+                    hashed_password,
+                    full_name.strip(),
+                    role,
+                    True,  # is_active
+                    True,  # is_verified
+                    datetime.utcnow()
+                ))
+                
+                new_user = cursor.fetchone()
                 conn.commit()
+                
+                return dict(new_user) if new_user else None
+                
         except Exception as e:
-            print(f"Error updating last login: {e}")
+            print(f"Error creating user: {e}")
+            return None
     
     @staticmethod
     def authenticate_user(email: str, password: str) -> dict:
         """Authenticate user with email and password"""
-        user = AuthService.get_user_by_email(email)
-        
-        if not user:
+        try:
+            user = AuthService.get_user_by_email(email)
+            
+            if not user:
+                return None
+            
+            if not AuthService.verify_password(password, user['hashed_password']):
+                return None
+            
+            if not user['is_active']:
+                return None
+            
+            # Update last login
+            try:
+                with get_db_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        "UPDATE users SET last_login = %s WHERE id = %s",
+                        (datetime.utcnow(), user['id'])
+                    )
+                    conn.commit()
+            except Exception as e:
+                print(f"Error updating last login: {e}")
+            
+            return user
+            
+        except Exception as e:
+            print(f"Error authenticating user: {e}")
             return None
-        
-        if not user.get('is_active', False):
-            return None
-        
-        if not AuthService.verify_password(password, user['hashed_password']):
-            return None
-        
-        # Update last login
-        AuthService.update_last_login(user['id'])
-        
-        return user
     
     @staticmethod
-    def create_tokens(user: dict) -> dict:
-        """Create access and refresh tokens for user"""
-        # Create token payload
-        additional_claims = {
-            "role": user['role'],
-            "email": user['email'],
-            "full_name": user['full_name']
-        }
-        
-        access_token = create_access_token(
-            identity=user['id'],
-            additional_claims=additional_claims
-        )
-        
-        refresh_token = create_refresh_token(
-            identity=user['id'],
-            additional_claims=additional_claims
-        )
-        
-        return {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "token_type": "Bearer",
-            "expires_in": int(os.getenv('JWT_ACCESS_TOKEN_EXPIRES', 3600))
-        }
-
-
-def setup_jwt(app):
-    """Setup JWT configuration for Flask app"""
+    def generate_tokens(user_id: str) -> dict:
+        """Generate JWT access and refresh tokens"""
+        try:
+            access_token = create_access_token(
+                identity=user_id,
+                expires_delta=timedelta(hours=1)
+            )
+            
+            refresh_token = create_refresh_token(
+                identity=user_id,
+                expires_delta=timedelta(days=30)
+            )
+            
+            return {
+                'access_token': access_token,
+                'refresh_token': refresh_token
+            }
+            
+        except Exception as e:
+            print(f"Error generating tokens: {e}")
+            return None
     
-    # JWT Configuration
-    app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'dev-secret-key-change-in-production')
-    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(seconds=int(os.getenv('JWT_ACCESS_TOKEN_EXPIRES', 3600)))
-    app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(seconds=int(os.getenv('JWT_REFRESH_TOKEN_EXPIRES', 2592000)))
-    
-    # Initialize JWT Manager
-    jwt = JWTManager(app)
-    
-    # JWT Error Handlers
-    @jwt.expired_token_loader
-    def expired_token_callback(jwt_header, jwt_payload):
-        return jsonify({
-            'error': 'token_expired',
-            'message': 'The token has expired'
-        }), 401
-    
-    @jwt.invalid_token_loader
-    def invalid_token_callback(error):
-        return jsonify({
-            'error': 'invalid_token',
-            'message': 'Invalid token'
-        }), 401
-    
-    @jwt.unauthorized_loader
-    def missing_token_callback(error):
-        return jsonify({
-            'error': 'authorization_required',
-            'message': 'Request does not contain an access token'
-        }), 401
-    
-    return jwt
-
-
-def require_role(allowed_roles):
-    """Decorator to require specific roles"""
-    def decorator(f):
-        def wrapper(*args, **kwargs):
-            # This will be called inside a @jwt_required() decorated function
+    @staticmethod
+    def refresh_access_token() -> str:
+        """Generate new access token from refresh token"""
+        try:
             current_user_id = get_jwt_identity()
-            claims = get_jwt()
-            user_role = claims.get('role')
             
-            if user_role not in allowed_roles:
-                return jsonify({
-                    'error': 'insufficient_permissions',
-                    'message': 'You do not have permission to access this resource'
-                }), 403
+            if not current_user_id:
+                return None
             
-            return f(*args, **kwargs)
-        
-        wrapper.__name__ = f.__name__
-        return wrapper
-    return decorator
+            # Verify user still exists and is active
+            user = AuthService.get_user_by_id(current_user_id)
+            if not user or not user['is_active']:
+                return None
+            
+            new_access_token = create_access_token(
+                identity=current_user_id,
+                expires_delta=timedelta(hours=1)
+            )
+            
+            return new_access_token
+            
+        except Exception as e:
+            print(f"Error refreshing access token: {e}")
+            return None
+    
+    @staticmethod
+    def update_user(user_id: str, update_data: dict) -> dict:
+        """Update user data"""
+        try:
+            # Build dynamic update query
+            allowed_fields = ['full_name', 'phone', 'address', 'house_number', 'notes']
+            update_fields = []
+            update_values = []
+            
+            for field, value in update_data.items():
+                if field in allowed_fields and value is not None:
+                    update_fields.append(f"{field} = %s")
+                    update_values.append(value)
+            
+            if not update_fields:
+                return None
+            
+            # Add updated_at
+            update_fields.append("updated_at = %s")
+            update_values.append(datetime.utcnow())
+            update_values.append(user_id)
+            
+            with get_db_connection() as conn:
+                cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+                
+                query = f"""
+                    UPDATE users 
+                    SET {', '.join(update_fields)}
+                    WHERE id = %s
+                    RETURNING *
+                """
+                
+                cursor.execute(query, update_values)
+                updated_user = cursor.fetchone()
+                conn.commit()
+                
+                return dict(updated_user) if updated_user else None
+                
+        except Exception as e:
+            print(f"Error updating user: {e}")
+            return None
 
-
-# Role-based decorators
-def require_super_admin(f):
-    """Require SUPER_ADMIN role"""
-    return require_role(['SUPER_ADMIN'])(f)
-
-def require_village_admin(f):
-    """Require VILLAGE_ADMIN or higher"""
-    return require_role(['SUPER_ADMIN', 'VILLAGE_ADMIN'])(f)
-
-def require_accounting_admin(f):
-    """Require ACCOUNTING_ADMIN or higher"""
-    return require_role(['SUPER_ADMIN', 'VILLAGE_ADMIN', 'ACCOUNTING_ADMIN'])(f)
-
-def require_any_admin(f):
-    """Require any admin role"""
-    return require_role(['SUPER_ADMIN', 'VILLAGE_ADMIN', 'ACCOUNTING_ADMIN', 'MAINTENANCE_STAFF'])(f)
-
-def require_active_user(f):
-    """Require any active user"""
-    return require_role(['SUPER_ADMIN', 'VILLAGE_ADMIN', 'ACCOUNTING_ADMIN', 'MAINTENANCE_STAFF', 'AUDITOR', 'RESIDENT'])(f)
+# Export RBAC decorators for backward compatibility
+__all__ = [
+    'AuthService',
+    'require_active_user',
+    'require_super_admin', 
+    'require_village_admin',
+    'require_accounting_admin',
+    'require_any_admin',
+    'get_current_user'
+]
 

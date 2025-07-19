@@ -1,37 +1,42 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginPage from './components/auth/LoginPage';
 import SuperAdminDashboard from './components/dashboard/SuperAdminDashboard';
 import './styles/App.css';
 
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
+// Main App Content Component
+function AppContent() {
+  const { isAuthenticated, user, loading } = useAuth();
 
-  const handleLogin = (credentials) => {
-    // Simple authentication logic
-    if (credentials.username === 'superadmin' && credentials.password === 'Admin123!') {
-      setIsAuthenticated(true);
-      setUser({
-        username: 'superadmin',
-        name: 'Super Admin',
-        email: 'admin@village.com',
-        role: 'superadmin'
-      });
-      return true;
-    }
-    return false;
-  };
-
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setUser(null);
-  };
-
-  if (!isAuthenticated) {
-    return <LoginPage onLogin={handleLogin} />;
+  // Show loading spinner while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">กำลังโหลดระบบ...</p>
+          <p className="text-gray-500 text-sm mt-2">Village Management System v2.0</p>
+        </div>
+      </div>
+    );
   }
 
-  return <SuperAdminDashboard user={user} onLogout={handleLogout} />;
+  // Show login page if not authenticated
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
+
+  // Show dashboard if authenticated
+  return <SuperAdminDashboard user={user} />;
+}
+
+// Main App Component with Auth Provider
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
 }
 
 export default App;
